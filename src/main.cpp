@@ -18,6 +18,9 @@
 */
 
 #include <iostream>
+#include <string>
+#include <termios.h>
+#include <unistd.h>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -28,7 +31,13 @@
 #include "uci.h"
 #include "syzygy/tbprobe.h"
 
-int main(int argc, char* argv[]) {
+#include "ppapi_simple/ps_main.h"
+
+int stockfish_main(int argc, char* argv[]) {
+  struct termios settings;
+  tcgetattr(0,&settings);
+  settings.c_lflag &= (~ECHO);
+  tcsetattr(0,TCSANOW,&settings);
 
   std::cout << engine_info() << std::endl;
 
@@ -47,4 +56,8 @@ int main(int argc, char* argv[]) {
   UCI::loop(argc, argv);
 
   Threads.exit();
+
+  return 0;
 }
+
+PPAPI_SIMPLE_REGISTER_MAIN(stockfish_main)

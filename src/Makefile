@@ -38,6 +38,12 @@ OBJS = benchmark.o bitbase.o bitboard.o endgame.o evaluate.o main.o \
 	material.o misc.o movegen.o movepick.o pawns.o position.o psqt.o \
 	search.o thread.o timeman.o tt.o uci.o ucioption.o syzygy/tbprobe.o
 
+THIS_MAKEFILE:=$(abspath $(lastword $(MAKEFILE_LIST)))
+NACL_SDK_ROOT?=$(abspath $(dir $(THIS_MAKEFILE))../..)
+
+OSNAME:=$(shell python $(NACL_SDK_ROOT)/tools/getos.py)
+TC_PATH:=$(abspath $(NACL_SDK_ROOT)/toolchain/$(OSNAME)_pnacl)
+
 ### ==========================================================================
 ### Section 2. High-level Configuration
 ### ==========================================================================
@@ -95,7 +101,7 @@ ifeq ($(ARCH),x86-64)
 	arch = x86_64
 	bits = 64
 	prefetch = yes
-	bsfq = yes
+	bsfq = no
 	sse = yes
 endif
 
@@ -140,17 +146,17 @@ endif
 
 ### 3.1 Selecting compiler (default = gcc)
 
-CXXFLAGS += -Wall -Wcast-qual -fno-exceptions -fno-rtti -std=c++11 $(EXTRACXXFLAGS)
-DEPENDFLAGS += -std=c++11
-LDFLAGS += $(EXTRALDFLAGS)
-
+CXXFLAGS += -Wall -Wcast-qual -fno-exceptions -fno-rtti -std=gnu++11 -I$(NACL_SDK_ROOT)/include -I$(NACL_SDK_ROOT)/include/pnacl $(EXTRACXXFLAGS)
+DEPENDFLAGS += -std=gnu++11
+LDFLAGS += $(EXTRALDFLAGS) -L$(NACL_SDK_ROOT)/lib/pnacl/Release -lppapi_simple -lnacl_io -lppapi_cpp -lppapi
+ 
 ifeq ($(COMP),)
 	COMP=gcc
 endif
 
 ifeq ($(COMP),gcc)
 	comp=gcc
-	CXX=g++
+	CXX=$(TC_PATH)/bin/pnacl-clang++
 	CXXFLAGS += -pedantic -Wextra -Wshadow
 	ifneq ($(UNAME),Darwin)
 	   LDFLAGS += -Wl,--no-as-needed
